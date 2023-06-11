@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Windows.Forms;
 using System.Xml.Xsl;
 
@@ -146,7 +147,7 @@ namespace bachelorl
 
 
             double HUmax = -100000000000;
-            int bestIter = -1;
+            int bestUontheLastIteration = -1;
 
             for (int i = 0; i < 7; i++)
             {
@@ -164,7 +165,7 @@ namespace bachelorl
                 if (tmpSum > HUmax)
                 {
                     HUmax = tmpSum;
-                    bestIter = i;
+                    bestUontheLastIteration = i;
                 }
             }
 
@@ -188,12 +189,13 @@ namespace bachelorl
 
             List<double[]> xHistory = new List<double[]>();
             List<double[]> pHistory = new List<double[]>();
+            List<int> bestiters = new List<int>();
 
 
-
-
-            while (currentTime < AllTime)
+            int counter = 0;
+            while (currentTime < AllTime) // ДАЛІ - метод ЕЙЛЕРА (цей цикл)
             {
+                counter++;
                 xHistory.Add(new double[7] { xsN_t[0], xsN_t[1], xsN_t[2], xsN_t[3], xsN_t[4], xsN_t[5], xsN_t[6] });
                 pHistory.Add(new double[7] { p_t[0], p_t[1], p_t[2], p_t[3], p_t[4], p_t[5], p_t[6] });
 
@@ -202,9 +204,9 @@ namespace bachelorl
                 xsN_t[2] = xsN_t_minus_odin[2] + step * system1Equations.eq3(xsN_t_minus_odin, Omega);
                 xsN_t[3] = xsN_t_minus_odin[3] + step * system1Equations.eq4(xsN_t_minus_odin, Omega);
 
-                xsN_t[4] = xsN_t_minus_odin[4] + step * system1Equations.eq5(xsN_t_minus_odin, J, u[bestIter], Mg);
-                xsN_t[5] = xsN_t_minus_odin[5] + step * system1Equations.eq6(xsN_t_minus_odin, J, u[bestIter], Mg);
-                xsN_t[6] = xsN_t_minus_odin[6] + step * system1Equations.eq7(xsN_t_minus_odin, J, u[bestIter], Mg);
+                xsN_t[4] = xsN_t_minus_odin[4] + step * system1Equations.eq5(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
+                xsN_t[5] = xsN_t_minus_odin[5] + step * system1Equations.eq6(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
+                xsN_t[6] = xsN_t_minus_odin[6] + step * system1Equations.eq7(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
 
                 p_t[0] = pt_minus_one[0] + step * pPointEquations.eq1(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
                 p_t[1] = pt_minus_one[1] + step * pPointEquations.eq2(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
@@ -215,6 +217,40 @@ namespace bachelorl
                 p_t[6] = pt_minus_one[6] + step * pPointEquations.eq7(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
 
 
+                //тут ми виводимо наші дані в табличку і саме тут видноо що вони погані (безкінечність або НЕчисло)
+                pgridOutput.Rows.Add(counter, p_t[0], p_t[1], p_t[2], p_t[3], p_t[4], p_t[5], p_t[6]);
+                xgridOutput.Rows.Add(counter, xsN_t[0], xsN_t[1], xsN_t[2], xsN_t[3], xsN_t[4], xsN_t[5], xsN_t[6]);
+
+
+                HUmax = -100000000000;
+                bestUontheLastIteration = 1;
+
+                for (int i = 0; i < 7; i++)
+                {
+                    double tmpSum = 0;
+                    tmpSum += p_t[0] * system1Equations.eq1(xsN_t, Omega);
+                    tmpSum += p_t[1] * system1Equations.eq2(xsN_t, Omega);
+                    tmpSum += p_t[2] * system1Equations.eq3(xsN_t, Omega);
+                    tmpSum += p_t[3] * system1Equations.eq4(xsN_t, Omega);
+
+
+                    tmpSum += p_t[4] * system1Equations.eq5(xsN_t, J, u[i], Mg);
+                    tmpSum += p_t[5] * system1Equations.eq6(xsN_t, J, u[i], Mg);
+                    tmpSum += p_t[6] * system1Equations.eq7(xsN_t, J, u[i], Mg);
+
+                    if (tmpSum > HUmax)
+                    {
+                        HUmax = tmpSum;
+                        bestUontheLastIteration = i;
+                    }
+                }
+                bestiters.Add(bestUontheLastIteration);
+
+
+
+
+
+
 
                 currentTime += step;
 
@@ -222,13 +258,66 @@ namespace bachelorl
                 pt_minus_one = new double[7] { p_t[0], p_t[1], p_t[2], p_t[3], p_t[4], p_t[5], p_t[6] };
             }
 
-            //нев'язки
 
 
-            
+            Random R = new Random();
+
+            double[] gradient = new double[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 
-            MessageBox.Show($"{bestIter} - найкраща ітер");
+            while (true)
+            {
+                //нев'язки
+                // рахуємо з кінця
+
+                for (int activeB = 0; activeB < 7; activeB++)
+                {
+                    gradient[activeB] = 0;
+                    double delta = R.NextDouble() / 1000000;
+                    double F_with_delta = 0;
+                    double F_without_delta = 0;
+
+
+                    F_with_delta += activeB != 0 ? p[0] * system1Equations.eq1(xsN_t, Omega) : (p[0] + delta) * system1Equations.eq1(xsN_t, Omega);
+                    F_with_delta += activeB != 1 ? p[1] * system1Equations.eq2(xsN_t, Omega) : (p[1] + delta) * system1Equations.eq2(xsN_t, Omega);
+                    F_with_delta += activeB != 2 ? p[2] * system1Equations.eq3(xsN_t, Omega) : (p[2] + delta) * system1Equations.eq3(xsN_t, Omega);
+                    F_with_delta += activeB != 3 ? p[3] * system1Equations.eq4(xsN_t, Omega) : (p[3] + delta) * system1Equations.eq4(xsN_t, Omega);
+                    F_with_delta += activeB != 4 ? p[4] *
+                        system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg) : (p[4] + delta) * system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg);
+                    F_with_delta += activeB != 5 ? p[5] *
+                        system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg) : (p[4] + delta) * system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg);
+                    F_with_delta += activeB != 6 ? p[6] *
+                        system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg) : (p[4] + delta) * system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg);
+                    F_with_delta = Math.Pow(gradient[activeB] - 1, 2);
+                    for (int i = 0; i < xe.Length; i++)
+                    {
+                        F_with_delta += Math.Pow(xe[i] - xsN_t[i], 2);
+                    }
+
+                    F_without_delta += p[0] * system1Equations.eq1(xsN_t, Omega);
+                    F_without_delta += p[1] * system1Equations.eq2(xsN_t, Omega);
+                    F_without_delta += p[2] * system1Equations.eq3(xsN_t, Omega);
+                    F_without_delta += p[3] * system1Equations.eq4(xsN_t, Omega);
+                    F_without_delta += p[4] * system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg);
+                    F_without_delta += p[5] * system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg);
+                    F_without_delta += p[6] * system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg);
+                    F_without_delta = Math.Pow(gradient[activeB] - 1, 2);
+
+                    for (int i = 0; i < xe.Length; i++)
+                    {
+                        F_without_delta += Math.Pow(xe[i] - xsN_t[i], 2);
+                    }
+                    //Ось тут - потрібно для градієнта орахувати похідну по часові, питання в тому, що додати до цілочисельного часу якусь безкінечно малу дельту - нереально нараді
+                    // або близько до цього. Яку дельту додавати? Як при цьому змінювати P та Х?  (проблемка в тому що у нас t - дискретний час.)
+
+                    double difference_between_with_delta_and_without_delta = F_with_delta - F_without_delta;
+
+
+                    gradient[activeB] = difference_between_with_delta_and_without_delta / delta;
+                }
+                break;
+            }
+            MessageBox.Show($"{bestUontheLastIteration} - найкраща ітер");
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
