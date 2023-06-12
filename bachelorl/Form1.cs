@@ -39,9 +39,9 @@ namespace bachelorl
 
 
             q_endGrid.Rows.Add(1, 0.25);
-            q_endGrid.Rows.Add(1, 0.01);
-            q_endGrid.Rows.Add(1, 0.16);
-            q_endGrid.Rows.Add(1, 0.58);
+            q_endGrid.Rows.Add(2, 0.01);
+            q_endGrid.Rows.Add(3, 0.16);
+            q_endGrid.Rows.Add(4, 0.58);
 
             for (int i = 0; i < ws.Length; i++)
             {
@@ -64,8 +64,8 @@ namespace bachelorl
             u[7] = new int[] { -1, 1, -1 };
 
             inertionDgv.Rows.Add(1, 150);
-            inertionDgv.Rows.Add(1, 165);
-            inertionDgv.Rows.Add(1, 175);
+            inertionDgv.Rows.Add(2, 165);
+            inertionDgv.Rows.Add(3, 175);
 
 
             for (int i = 0; i < 7; i++)
