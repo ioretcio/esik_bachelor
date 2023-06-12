@@ -22,7 +22,7 @@ namespace bachelorl
         public double[] p = new double[7];
 
         public double[] Mg = new double[3];
-        public double miu = 3.9660 * Math.Pow(10, 14);
+        public double miu = 3.9660 * Math.Pow(10, 1);
         public double Ro = 6371000 + 35000000;
 
         public int[][] u = new int[8][];
@@ -31,21 +31,25 @@ namespace bachelorl
         {
             InitializeComponent();
 
-            for (int i = 0; i < qs.Length; i++)
-            {
-                q_startGrid.Rows.Add(i + 1, 0.01);
-            }
-            for (int i = 0; i < qe.Length; i++)
-            {
-                q_endGrid.Rows.Add(i + 1, 0.01);
-            }
+
+            q_startGrid.Rows.Add(1, 0.04);
+            q_startGrid.Rows.Add(2, 0.49);
+            q_startGrid.Rows.Add(3, 0.36);
+            q_startGrid.Rows.Add(4, 0.11);
+
+
+            q_endGrid.Rows.Add(1, 0.25);
+            q_endGrid.Rows.Add(1, 0.01);
+            q_endGrid.Rows.Add(1, 0.16);
+            q_endGrid.Rows.Add(1, 0.58);
+
             for (int i = 0; i < ws.Length; i++)
             {
-                w_startGrid.Rows.Add(i + 1, 0.01);
+                w_startGrid.Rows.Add(i + 1, (i + 1) * 0.01);
             }
             for (int i = 0; i < we.Length; i++)
             {
-                w_endGrid.Rows.Add(i + 1, 0.01);
+                w_endGrid.Rows.Add(i + 1, (i + 1) * 0.01);
             }
 
 
@@ -66,7 +70,7 @@ namespace bachelorl
 
             for (int i = 0; i < 7; i++)
             {
-                pGrid.Rows.Add(i + 1, 1);
+                pGrid.Rows.Add(i + 1, 0.01);
             }
         }
 
@@ -126,7 +130,8 @@ namespace bachelorl
         {
             readAndTransferQWtoX();
             checkQ();
-
+            xgridOutput.Rows.Clear();
+            pgridOutput.Rows.Clear();
 
             double Omega = 0.01;
 
@@ -199,23 +204,41 @@ namespace bachelorl
                 xHistory.Add(new double[7] { xsN_t[0], xsN_t[1], xsN_t[2], xsN_t[3], xsN_t[4], xsN_t[5], xsN_t[6] });
                 pHistory.Add(new double[7] { p_t[0], p_t[1], p_t[2], p_t[3], p_t[4], p_t[5], p_t[6] });
 
-                xsN_t[0] = xsN_t_minus_odin[0] + step * system1Equations.eq1(xsN_t_minus_odin, Omega);
-                xsN_t[1] = xsN_t_minus_odin[1] + step * system1Equations.eq2(xsN_t_minus_odin, Omega);
-                xsN_t[2] = xsN_t_minus_odin[2] + step * system1Equations.eq3(xsN_t_minus_odin, Omega);
-                xsN_t[3] = xsN_t_minus_odin[3] + step * system1Equations.eq4(xsN_t_minus_odin, Omega);
+                double quadratXSum = 0;
+                for (int i = 0; i < 4; i++)
+                {
+                    quadratXSum = xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
+                }
+                quadratXSum = Math.Sqrt(quadratXSum);
+
+                xsN_t[0] = (xsN_t_minus_odin[0] + step * system1Equations.eq1(xsN_t_minus_odin, Omega)) / quadratXSum;
+                xsN_t[1] = (xsN_t_minus_odin[1] + step * system1Equations.eq2(xsN_t_minus_odin, Omega)) / quadratXSum;
+                xsN_t[2] = (xsN_t_minus_odin[2] + step * system1Equations.eq3(xsN_t_minus_odin, Omega)) / quadratXSum;
+                xsN_t[3] = (xsN_t_minus_odin[3] + step * system1Equations.eq4(xsN_t_minus_odin, Omega)) / quadratXSum;
 
                 xsN_t[4] = xsN_t_minus_odin[4] + step * system1Equations.eq5(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
                 xsN_t[5] = xsN_t_minus_odin[5] + step * system1Equations.eq6(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
                 xsN_t[6] = xsN_t_minus_odin[6] + step * system1Equations.eq7(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
 
-                p_t[0] = pt_minus_one[0] + step * pPointEquations.eq1(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
-                p_t[1] = pt_minus_one[1] + step * pPointEquations.eq2(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
-                p_t[2] = pt_minus_one[2] + step * pPointEquations.eq3(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
-                p_t[3] = pt_minus_one[3] + step * pPointEquations.eq4(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
-                p_t[4] = pt_minus_one[4] + step * pPointEquations.eq5(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
-                p_t[5] = pt_minus_one[5] + step * pPointEquations.eq6(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
-                p_t[6] = pt_minus_one[6] + step * pPointEquations.eq7(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                double quadratPSum = 0;
+                for (int i = 0; i < 7; i++)
+                {
+                    quadratPSum = pt_minus_one[i] * pt_minus_one[i];
+                }
+                quadratPSum = Math.Sqrt(quadratPSum);
 
+
+
+
+                p_t[0] = (pt_minus_one[0] + step * pPointEquations.eq1(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro) )/quadratPSum;
+                p_t[1] = (pt_minus_one[1] + step * pPointEquations.eq2(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro)) / quadratPSum;
+                p_t[2] =( pt_minus_one[2] + step * pPointEquations.eq3(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro)) / quadratPSum;
+                p_t[3] = (pt_minus_one[3] + step * pPointEquations.eq4(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro)) / quadratPSum;
+                p_t[4] = (pt_minus_one[4] + step * pPointEquations.eq5(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro)) / quadratPSum;
+                p_t[5] = (pt_minus_one[5] + step * pPointEquations.eq6(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro)) / quadratPSum;
+                p_t[6] = (pt_minus_one[6] + step * pPointEquations.eq7(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro)) / quadratPSum;
+                
+                
 
                 //тут ми виводимо наші дані в табличку і саме тут видноо що вони погані (безкінечність або НЕчисло)
                 pgridOutput.Rows.Add(counter, p_t[0], p_t[1], p_t[2], p_t[3], p_t[4], p_t[5], p_t[6]);
@@ -262,62 +285,177 @@ namespace bachelorl
 
             Random R = new Random();
 
-            double[] gradient = new double[8] { 0, 0, 0, 0, 0, 0, 0, 0 };
 
+            double neviazka_bez_zburennia = 0;
+            neviazka_bez_zburennia += p_t[0] * system1Equations.eq1(xsN_t, Omega);
+            neviazka_bez_zburennia += p_t[1] * system1Equations.eq2(xsN_t, Omega);
+            neviazka_bez_zburennia += p_t[2] * system1Equations.eq3(xsN_t, Omega);
+            neviazka_bez_zburennia += p_t[3] * system1Equations.eq4(xsN_t, Omega);
+            neviazka_bez_zburennia += p_t[4] * system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg);
+            neviazka_bez_zburennia += p_t[5] * system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg);
+            neviazka_bez_zburennia += p_t[6] * system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg);
+            neviazka_bez_zburennia = Math.Pow(neviazka_bez_zburennia - 1, 2);
 
-            while (true)
+            for (int j = 0; j < xe.Length; j++)
             {
-                //нев'язки
-                // рахуємо з кінця
-
-                for (int activeB = 0; activeB < 7; activeB++)
-                {
-                    gradient[activeB] = 0;
-                    double delta = R.NextDouble() / 1000000;
-                    double F_with_delta = 0;
-                    double F_without_delta = 0;
-
-
-                    F_with_delta += activeB != 0 ? p[0] * system1Equations.eq1(xsN_t, Omega) : (p[0] + delta) * system1Equations.eq1(xsN_t, Omega);
-                    F_with_delta += activeB != 1 ? p[1] * system1Equations.eq2(xsN_t, Omega) : (p[1] + delta) * system1Equations.eq2(xsN_t, Omega);
-                    F_with_delta += activeB != 2 ? p[2] * system1Equations.eq3(xsN_t, Omega) : (p[2] + delta) * system1Equations.eq3(xsN_t, Omega);
-                    F_with_delta += activeB != 3 ? p[3] * system1Equations.eq4(xsN_t, Omega) : (p[3] + delta) * system1Equations.eq4(xsN_t, Omega);
-                    F_with_delta += activeB != 4 ? p[4] *
-                        system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg) : (p[4] + delta) * system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg);
-                    F_with_delta += activeB != 5 ? p[5] *
-                        system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg) : (p[4] + delta) * system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg);
-                    F_with_delta += activeB != 6 ? p[6] *
-                        system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg) : (p[4] + delta) * system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg);
-                    F_with_delta = Math.Pow(gradient[activeB] - 1, 2);
-                    for (int i = 0; i < xe.Length; i++)
-                    {
-                        F_with_delta += Math.Pow(xe[i] - xsN_t[i], 2);
-                    }
-
-                    F_without_delta += p[0] * system1Equations.eq1(xsN_t, Omega);
-                    F_without_delta += p[1] * system1Equations.eq2(xsN_t, Omega);
-                    F_without_delta += p[2] * system1Equations.eq3(xsN_t, Omega);
-                    F_without_delta += p[3] * system1Equations.eq4(xsN_t, Omega);
-                    F_without_delta += p[4] * system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg);
-                    F_without_delta += p[5] * system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg);
-                    F_without_delta += p[6] * system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg);
-                    F_without_delta = Math.Pow(gradient[activeB] - 1, 2);
-
-                    for (int i = 0; i < xe.Length; i++)
-                    {
-                        F_without_delta += Math.Pow(xe[i] - xsN_t[i], 2);
-                    }
-                    //Ось тут - потрібно для градієнта орахувати похідну по часові, питання в тому, що додати до цілочисельного часу якусь безкінечно малу дельту - нереально нараді
-                    // або близько до цього. Яку дельту додавати? Як при цьому змінювати P та Х?  (проблемка в тому що у нас t - дискретний час.)
-
-                    double difference_between_with_delta_and_without_delta = F_with_delta - F_without_delta;
-
-
-                    gradient[activeB] = difference_between_with_delta_and_without_delta / delta;
-                }
-                break;
+                neviazka_bez_zburennia += Math.Pow(xe[j] - xsN_t[j], 2);
             }
-            MessageBox.Show($"{bestUontheLastIteration} - найкраща ітер");
+
+            double[] neviazky_zi_zburenniam = new double[8];
+            double delta = 0;
+            List<double> deltas = new List<double>();
+            for (int p_neviazka_index = 0; p_neviazka_index < 7; p_neviazka_index++)
+            {
+                delta = R.NextDouble() / 10000;
+                deltas.Add(delta);
+                p_t = new double[7] { p[0], p[1], p[2], p[3], p[4], p[5], p[6] };
+                pt_minus_one = new double[7] { p[0], p[1], p[2], p[3], p[4], p[5], p[6] };
+                xsN_t = new double[7] { xs[0], xs[1], xs[2], xs[3], xs[4], xs[5], xs[6] };
+                xsN_t_minus_odin = new double[7] { xs[0], xs[1], xs[2], xs[3], xs[4], xs[5], xs[6] };
+
+                p_t[p_neviazka_index] += delta;
+                pt_minus_one[p_neviazka_index] += delta;
+                currentTime = 0;
+
+                while (currentTime < AllTime) // ДАЛІ - метод ЕЙЛЕРА (цей цикл)
+                {
+                    xsN_t[0] = xsN_t_minus_odin[0] + step * system1Equations.eq1(xsN_t_minus_odin, Omega);
+                    xsN_t[1] = xsN_t_minus_odin[1] + step * system1Equations.eq2(xsN_t_minus_odin, Omega);
+                    xsN_t[2] = xsN_t_minus_odin[2] + step * system1Equations.eq3(xsN_t_minus_odin, Omega);
+                    xsN_t[3] = xsN_t_minus_odin[3] + step * system1Equations.eq4(xsN_t_minus_odin, Omega);
+
+                    xsN_t[4] = xsN_t_minus_odin[4] + step * system1Equations.eq5(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
+                    xsN_t[5] = xsN_t_minus_odin[5] + step * system1Equations.eq6(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
+                    xsN_t[6] = xsN_t_minus_odin[6] + step * system1Equations.eq7(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
+
+                    p_t[0] = pt_minus_one[0] + step * pPointEquations.eq1(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                    p_t[1] = pt_minus_one[1] + step * pPointEquations.eq2(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                    p_t[2] = pt_minus_one[2] + step * pPointEquations.eq3(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                    p_t[3] = pt_minus_one[3] + step * pPointEquations.eq4(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                    p_t[4] = pt_minus_one[4] + step * pPointEquations.eq5(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                    p_t[5] = pt_minus_one[5] + step * pPointEquations.eq6(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                    p_t[6] = pt_minus_one[6] + step * pPointEquations.eq7(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                    HUmax = -100000000000;
+                    bestUontheLastIteration = 1;
+                    for (int i = 0; i < 7; i++)
+                    {
+                        double tmpSum = 0;
+                        tmpSum += p_t[0] * system1Equations.eq1(xsN_t, Omega);
+                        tmpSum += p_t[1] * system1Equations.eq2(xsN_t, Omega);
+                        tmpSum += p_t[2] * system1Equations.eq3(xsN_t, Omega);
+                        tmpSum += p_t[3] * system1Equations.eq4(xsN_t, Omega);
+
+
+                        tmpSum += p_t[4] * system1Equations.eq5(xsN_t, J, u[i], Mg);
+                        tmpSum += p_t[5] * system1Equations.eq6(xsN_t, J, u[i], Mg);
+                        tmpSum += p_t[6] * system1Equations.eq7(xsN_t, J, u[i], Mg);
+
+                        if (tmpSum > HUmax)
+                        {
+                            HUmax = tmpSum;
+                            bestUontheLastIteration = i;
+                        }
+                    }
+                    currentTime += step;
+                    xsN_t_minus_odin = new double[7] { xsN_t[0], xsN_t[1], xsN_t[2], xsN_t[3], xsN_t[4], xsN_t[5], xsN_t[6] };
+                    pt_minus_one = new double[7] { p_t[0], p_t[1], p_t[2], p_t[3], p_t[4], p_t[5], p_t[6] };
+                }
+
+
+                neviazky_zi_zburenniam[p_neviazka_index] = 0;
+                neviazky_zi_zburenniam[p_neviazka_index] += p[0] * system1Equations.eq1(xsN_t, Omega);
+                neviazky_zi_zburenniam[p_neviazka_index] += p[1] * system1Equations.eq2(xsN_t, Omega);
+                neviazky_zi_zburenniam[p_neviazka_index] += p[2] * system1Equations.eq3(xsN_t, Omega);
+                neviazky_zi_zburenniam[p_neviazka_index] += p[3] * system1Equations.eq4(xsN_t, Omega);
+                neviazky_zi_zburenniam[p_neviazka_index] += p[4] * system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg);
+                neviazky_zi_zburenniam[p_neviazka_index] += p[5] * system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg);
+                neviazky_zi_zburenniam[p_neviazka_index] += p[6] * system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg);
+                neviazky_zi_zburenniam[p_neviazka_index] = Math.Pow(neviazka_bez_zburennia - 1, 2);
+
+                for (int j = 0; j < xe.Length; j++)
+                {
+                    neviazky_zi_zburenniam[p_neviazka_index] += Math.Pow(xe[j] - xsN_t[j], 2);
+                }
+            }
+
+
+
+
+            delta = R.NextDouble() / 10000;
+            deltas.Add(delta);
+            p_t = new double[7] { p[0], p[1], p[2], p[3], p[4], p[5], p[6] };
+            pt_minus_one = new double[7] { p[0], p[1], p[2], p[3], p[4], p[5], p[6] };
+            xsN_t = new double[7] { xs[0], xs[1], xs[2], xs[3], xs[4], xs[5], xs[6] };
+            xsN_t_minus_odin = new double[7] { xs[0], xs[1], xs[2], xs[3], xs[4], xs[5], xs[6] };
+            currentTime = 0;
+
+            while (currentTime < AllTime + delta) // ДАЛІ - метод ЕЙЛЕРА (цей цикл)
+            {
+                xsN_t[0] = xsN_t_minus_odin[0] + step * system1Equations.eq1(xsN_t_minus_odin, Omega);
+                xsN_t[1] = xsN_t_minus_odin[1] + step * system1Equations.eq2(xsN_t_minus_odin, Omega);
+                xsN_t[2] = xsN_t_minus_odin[2] + step * system1Equations.eq3(xsN_t_minus_odin, Omega);
+                xsN_t[3] = xsN_t_minus_odin[3] + step * system1Equations.eq4(xsN_t_minus_odin, Omega);
+
+                xsN_t[4] = xsN_t_minus_odin[4] + step * system1Equations.eq5(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
+                xsN_t[5] = xsN_t_minus_odin[5] + step * system1Equations.eq6(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
+                xsN_t[6] = xsN_t_minus_odin[6] + step * system1Equations.eq7(xsN_t_minus_odin, J, u[bestUontheLastIteration], Mg);
+
+                p_t[0] = pt_minus_one[0] + step * pPointEquations.eq1(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                p_t[1] = pt_minus_one[1] + step * pPointEquations.eq2(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                p_t[2] = pt_minus_one[2] + step * pPointEquations.eq3(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                p_t[3] = pt_minus_one[3] + step * pPointEquations.eq4(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                p_t[4] = pt_minus_one[4] + step * pPointEquations.eq5(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                p_t[5] = pt_minus_one[5] + step * pPointEquations.eq6(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                p_t[6] = pt_minus_one[6] + step * pPointEquations.eq7(xsN_t_minus_odin, Omega, pt_minus_one, miu, J, Ro);
+                HUmax = -100000000000;
+                bestUontheLastIteration = 1;
+                for (int i = 0; i < 7; i++)
+                {
+                    double tmpSum = 0;
+                    tmpSum += p_t[0] * system1Equations.eq1(xsN_t, Omega);
+                    tmpSum += p_t[1] * system1Equations.eq2(xsN_t, Omega);
+                    tmpSum += p_t[2] * system1Equations.eq3(xsN_t, Omega);
+                    tmpSum += p_t[3] * system1Equations.eq4(xsN_t, Omega);
+
+
+                    tmpSum += p_t[4] * system1Equations.eq5(xsN_t, J, u[i], Mg);
+                    tmpSum += p_t[5] * system1Equations.eq6(xsN_t, J, u[i], Mg);
+                    tmpSum += p_t[6] * system1Equations.eq7(xsN_t, J, u[i], Mg);
+
+                    if (tmpSum > HUmax)
+                    {
+                        HUmax = tmpSum;
+                        bestUontheLastIteration = i;
+                    }
+                }
+                currentTime += step;
+                xsN_t_minus_odin = new double[7] { xsN_t[0], xsN_t[1], xsN_t[2], xsN_t[3], xsN_t[4], xsN_t[5], xsN_t[6] };
+                pt_minus_one = new double[7] { p_t[0], p_t[1], p_t[2], p_t[3], p_t[4], p_t[5], p_t[6] };
+            }
+
+
+            neviazky_zi_zburenniam[7] = 0;
+            neviazky_zi_zburenniam[7] += p[0] * system1Equations.eq1(xsN_t, Omega);
+            neviazky_zi_zburenniam[7] += p[1] * system1Equations.eq2(xsN_t, Omega);
+            neviazky_zi_zburenniam[7] += p[2] * system1Equations.eq3(xsN_t, Omega);
+            neviazky_zi_zburenniam[7] += p[3] * system1Equations.eq4(xsN_t, Omega);
+            neviazky_zi_zburenniam[7] += p[4] * system1Equations.eq5(xsN_t, J, u[bestUontheLastIteration], Mg);
+            neviazky_zi_zburenniam[7] += p[5] * system1Equations.eq6(xsN_t, J, u[bestUontheLastIteration], Mg);
+            neviazky_zi_zburenniam[7] += p[6] * system1Equations.eq7(xsN_t, J, u[bestUontheLastIteration], Mg);
+            neviazky_zi_zburenniam[7] = Math.Pow(neviazka_bez_zburennia - 1, 2);
+
+            for (int j = 0; j < xe.Length; j++)
+            {
+                neviazky_zi_zburenniam[7] += Math.Pow(xe[j] - xsN_t[j], 2);
+            }
+
+
+            double[] gradient = new double[8];
+
+            for (int grad_index = 0; grad_index < 8; grad_index++)
+            {
+                gradient[grad_index] = (neviazky_zi_zburenniam[grad_index] - neviazka_bez_zburennia) / deltas[grad_index];
+            }
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
@@ -462,29 +600,6 @@ namespace bachelorl
                 );
         }
     }
-
-
-    //class Hestimation
-    //{
-    //    public static double H(double[] u, double[] p, double[] x, double Omega, double[] J, double[] Mg)
-    //    {
-    //        double sum = 0;
-    //        for (int i = 0; i < x.Length; i++)
-    //        {
-    //            sum +=
-    //                (p[0] * (x[6] * x[1] + (-x[5] + Omega) * x[2] + x[4] * x[3])) +
-    //                (p[1] * (-x[6] * x[0] + x[4] * x[2] + (x[5] + Omega) * x[3])) +
-    //                (p[2] * ((x[5] - Omega) * x[0] - x[4] * x[2] + x[6] * x[3])) +
-    //                (p[3] * (-x[4] * x[0] + (-x[5] - Omega) * x[1] - x[6] * x[2])) +
-    //                (p[4] * ((-(J[2] - J[1]) * x[5] * x[6] + u[0] + Mg[0]) / J[0])) +
-    //                (p[5] * ((-(J[0] - J[2]) * x[4] * x[6] + u[1] + Mg[1]) / J[1])) +
-    //                (p[6] * ((-(J[1] - J[0]) * x[4] * x[5] + u[2] + Mg[2]) / J[2]));
-    //        }
-    //        return sum;
-    //    }
-    //}
-
-
     class Convert_
     {
         public static double toDouble(object value)
