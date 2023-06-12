@@ -252,7 +252,7 @@ namespace bachelorl
                     double quadratXSum = 0;
                     for (int i = 0; i < 4; i++)
                     {
-                        quadratXSum = xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
+                        quadratXSum += xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
                     }
                     quadratXSum = Math.Sqrt(quadratXSum);
 
@@ -372,7 +372,7 @@ namespace bachelorl
                         double quadratXSum = 0;
                         for (int i = 0; i < 4; i++)
                         {
-                            quadratXSum = xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
+                            quadratXSum += xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
                         }
                         quadratXSum = Math.Sqrt(quadratXSum);
 
@@ -387,7 +387,7 @@ namespace bachelorl
                         double quadratPSum = 0;
                         for (int i = 0; i < 7; i++)
                         {
-                            quadratPSum = pt_minus_one[i] * pt_minus_one[i];
+                            quadratPSum += pt_minus_one[i] * pt_minus_one[i];
                         }
                         quadratPSum = Math.Sqrt(quadratPSum);
 
@@ -458,7 +458,7 @@ namespace bachelorl
                     double quadratXSum = 0;
                     for (int i = 0; i < 4; i++)
                     {
-                        quadratXSum = xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
+                        quadratXSum += xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
                     }
                     quadratXSum = Math.Sqrt(quadratXSum);
 
@@ -554,7 +554,7 @@ namespace bachelorl
                     double quadratXSum = 0;
                     for (int i = 0; i < 4; i++)
                     {
-                        quadratXSum = xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
+                        quadratXSum += xsN_t_minus_odin[i] * xsN_t_minus_odin[i];
                     }
                     quadratXSum = Math.Sqrt(quadratXSum);
 
