@@ -635,7 +635,9 @@ namespace bachelorl
                     nevicount++;
                     dataGridView1.Rows.Add(nevicount, neviazka_bez_zburenniaNEW);
                     chart2.Series[0].Points.AddY(neviazka_bez_zburenniaNEW);
-
+                    chart3.Series[0].Points.AddXY(nevicount, u[bestUontheLastIteration][0]);
+                    chart3.Series[1].Points.AddXY(nevicount, u[bestUontheLastIteration][1]);
+                    chart3.Series[2].Points.AddXY(nevicount, u[bestUontheLastIteration][2]);
                     if (nevicount > 30 || Math.Abs(neviazka_bez_zburenniaNEW - SUPERNEVIAZKA)<epsilon)
                        break;
                     else
